@@ -1,6 +1,6 @@
 # Real-Time Computer Vision Pipeline & Monitoring Dashboard
 
-A highly resilient, multi-process Computer Vision (CV) pipeline with an asynchronous monitoring dashboard. This project is designed to handle multiple camera streams, perform batched simulated GPU inference, and stream real-time metrics via RabbitMQ to a modern web interface.
+Multi-process Computer Vision (CV) pipeline with an asynchronous monitoring dashboard. This project is designed to handle multiple camera streams, perform batched simulated GPU inference, and stream real-time metrics via RabbitMQ to a modern web interface.
 
 ## 🏗️ Architecture Overview
 

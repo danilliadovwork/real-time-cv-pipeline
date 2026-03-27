@@ -24,7 +24,7 @@ from message_broker import MessageBrokerClient
 class PipelineConfig:
     cameras: List[Dict]
     capture_queue_size: int = 60
-    reporter_queue_size: int = 200
+    reporter_queue_size: int = 1000
     max_reconnect_backoff: float = 10.0
     batch_size: int = 4
     broker_topic: str = "cv.pipeline.results"
@@ -78,7 +78,7 @@ def camera_worker(cam_cfg: dict, out_queue: mp.Queue, stop_event: mp.Event, conf
 
         except CameraError as e:
             logging.error(f"[Capture] {e}. Reconnecting in {backoff}s...")
-            # Use short sleeps so we can interrupt the backoff during shutdown
+            # Use short sleeps so it's possible to interrupt the backoff during shutdown
             for _ in range(int(backoff * 10)):
                 if stop_event.is_set(): break
                 time.sleep(0.1)
@@ -272,7 +272,7 @@ def main():
 
     # --- THE HEALTH MONITOR LOOP ---
     try:
-        # Keep checking processes as long as we haven't been told to shut down
+        # Keep checking processes as long as they haven't been told to shut down
         while not stop_event.is_set():
             for i in range(len(processes)):
                 p = processes[i]

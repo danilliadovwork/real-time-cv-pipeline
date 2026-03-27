@@ -1,5 +1,8 @@
+import asyncio
 import json
-import os  # <-- Add this
+import logging
+import os
+
 import aio_pika
 import reflex as rx
 
@@ -10,8 +13,6 @@ class DashboardState(rx.State):
     metrics: dict[str, dict[str, str]] = {}
     is_listening: bool = False
 
-
-
     @rx.event(background=True)
     async def listen_to_broker(self):
         """Background task that consumes RabbitMQ messages asynchronously."""
@@ -20,41 +21,49 @@ class DashboardState(rx.State):
                 return
             self.is_listening = True
 
+        connection = None
         try:
-            # Connect to the RabbitMQ container
             broker_url = os.getenv("BROKER_URL", "amqp://guest:guest@localhost/")
             connection = await aio_pika.connect_robust(broker_url)
 
             async with connection:
                 channel = await connection.channel()
-                # Must match the queue name from the CV pipeline exactly
                 queue = await channel.declare_queue("cv.pipeline.results", durable=True)
-                
+
                 async with queue.iterator() as queue_iter:
                     async for message in queue_iter:
+
+                        if self.router.session.client_token not in app.event_namespace.token_to_sid:
+                            logging.info("Client disconnected. Shutting down RabbitMQ stream.")
+                            break  # Breaks the loop so the task can die cleanly
+
                         async with message.process():
-                            # Parse the JSON payload from the CV pipeline
                             data = json.loads(message.body.decode())
                             cam_id = data["cam_id"]
-                            
-                            # Format numbers nicely for the UI
+
                             formatted_data = {
                                 "frame_num": str(data["frame_num"]),
                                 "batch_size": str(data.get("batch_size", 1)),
                                 "proc_latency": f"{data['proc_latency']:.3f}s",
                                 "total_latency": f"{data['total_latency']:.3f}s",
                             }
-                            
-                            # Update the UI state
-                            async with self:
-                                # Reassigning the dictionary triggers a UI refresh
-                                self.metrics[cam_id] = formatted_data
-                                
-        except Exception as e:
-            print(f"RabbitMQ Connection Error: {e}")
-            async with self:
-                self.is_listening = False
 
+                            async with self:
+                                self.metrics[cam_id] = formatted_data
+
+        except Exception as e:
+            logging.info(f"RabbitMQ Connection Error: {e}")
+        finally:
+            # 1. Sever the RabbitMQ connection
+            if connection and not connection.is_closed:
+                await connection.close()
+
+            # 2. Only reset the state if the client's tab is still open!
+            if self.router.session.client_token in app.event_namespace.token_to_sid:
+                async with self:
+                    self.is_listening = False
+            else:
+                logging.info("Task killed cleanly on disconnect. No state update needed.")
 
 # ---------------------------------------------------------
 # UI Components
