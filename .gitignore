@@ -75,6 +75,6 @@ celerybeat.pid
 ehthumbs.db
 Thumbs.db
 
-frontend/.gitignore
+cv_dashboard/.gitignore
 excluded
 technical_assessment.pdf

@@ -27,3 +27,21 @@ services:
       interval: 10s    # Check every 10 seconds
       timeout: 5s      # Give it 5 seconds to respond
       retries: 5       # Fail after 5 unsuccessful attempts
+
+  dashboard:
+    build: ./cv_dashboard
+    container_name: cv_dashboard
+    ports:
+      - "3000:3000"   # The UI port
+      - "8000:8000"   # The Backend API port
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      pipeline:
+        condition: service_started
+    environment:
+      # Tell Reflex where RabbitMQ lives inside Docker
+      - BROKER_URL=amqp://guest:guest@rabbitmq/
+    volumes:
+      - ./cv_dashboard:/app
