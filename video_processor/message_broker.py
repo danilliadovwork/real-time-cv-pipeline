@@ -24,10 +24,12 @@ class MessageBrokerClient:
                 self.connection = pika.BlockingConnection(parameters)
                 self.channel = self.connection.channel()
 
-                # Declare the queue (creates it if it doesn't exist)
-                self.channel.queue_declare(queue=self.queue_name, durable=True)
-
-                logging.info(f"[Broker] Successfully connected! Publishing to '{self.queue_name}'.")
+                # 1. Declare a FANOUT exchange instead of a queue
+                self.channel.exchange_declare(
+                    exchange='cv_metrics_exchange',
+                    exchange_type='fanout'
+                )
+                logging.info("[Broker] Connected to Fanout Exchange.")
                 return
             except pika.exceptions.AMQPConnectionError:
                 retries -= 1
@@ -39,22 +41,16 @@ class MessageBrokerClient:
     def publish(self, message: dict):
         if not self.connection or self.connection.is_closed:
             return
-
         try:
-            # Serialize the dictionary to a JSON string
             json_payload = json.dumps(message)
-
-            # Publish to RabbitMQ
+            # 2. Publish to the EXCHANGE, not a routing_key
             self.channel.basic_publish(
-                exchange='',
-                routing_key=self.queue_name,
-                body=json_payload,
-                properties=pika.BasicProperties(
-                    delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE  # Make messages persistent
-                )
+                exchange='cv_metrics_exchange',
+                routing_key='', # Routing key is ignored in fanout
+                body=json_payload
             )
         except Exception as e:
-            logging.error(f"[Broker] Failed to publish message: {e}")
+            logging.error(f"[Broker] Publish failed: {e}")
 
     def close(self):
         if self.connection and not self.connection.is_closed:

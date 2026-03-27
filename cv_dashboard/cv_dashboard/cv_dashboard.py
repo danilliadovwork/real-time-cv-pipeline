@@ -16,19 +16,25 @@ class DashboardState(rx.State):
     @rx.event(background=True)
     async def listen_to_broker(self):
         """Background task that consumes RabbitMQ messages asynchronously."""
-        async with self:
-            if self.is_listening:
-                return
-            self.is_listening = True
-
-        connection = None
         try:
             broker_url = os.getenv("BROKER_URL", "amqp://guest:guest@localhost/")
             connection = await aio_pika.connect_robust(broker_url)
 
             async with connection:
                 channel = await connection.channel()
-                queue = await channel.declare_queue("cv.pipeline.results", durable=True)
+
+                # 1. Declare the same exchange
+                exchange = await channel.declare_exchange(
+                    "cv_metrics_exchange",
+                    aio_pika.ExchangeType.FANOUT
+                )
+
+                # 2. Declare a temporary, exclusive queue (name is auto-generated)
+                # 'exclusive=True' ensures this queue dies when the dashboard disconnects
+                queue = await channel.declare_queue(exclusive=True)
+
+                # 3. Bind the temporary queue to the exchange
+                await queue.bind(exchange)
 
                 async with queue.iterator() as queue_iter:
                     async for message in queue_iter:
@@ -137,7 +143,8 @@ def index() -> rx.Component:
             padding_top="4em",
             padding_bottom="4em",
         ),
-        max_width="800px"
+        on_mount=DashboardState.listen_to_broker,
+        max_width="800px",
     )
 
 # App Initialization
