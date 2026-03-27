@@ -1,0 +1,29 @@
+services:
+  pipeline:
+    # Tell Docker to look inside the video_processor folder for the Dockerfile
+    build: ./video_processor
+    container_name: cv_pipeline
+    # CRITICAL: Overrides Docker's default 64MB limit
+    shm_size: '2gb'
+    stop_grace_period: 10s
+    restart: unless-stopped
+    volumes:
+      - ./video_processor:/app
+    environment:
+      - BROKER_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_broker
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s    # Check every 10 seconds
+      timeout: 5s      # Give it 5 seconds to respond
+      retries: 5       # Fail after 5 unsuccessful attempts

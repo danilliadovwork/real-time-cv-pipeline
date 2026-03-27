@@ -1,0 +1,80 @@
+# =========================
+# PyCharm & IDEs
+# =========================
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# =========================
+# Python & Environments
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# =========================
+# Environment Secrets
+# =========================
+# NEVER commit your database passwords or Redis URLs!
+.env
+.env.local
+*.pem
+
+# =========================
+# Reflex (Frontend)
+# =========================
+# Reflex compiles to a Next.js app in this hidden folder.
+# It is massive and should never be committed.
+.web/
+frontend/.web/
+# Local SQLite databases (Reflex sometimes generates these for local testing)
+*.db
+reflex.db
+sqlite3.db
+
+# =========================
+# Celery & Background Workers
+# =========================
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat.pid
+*.log
+
+# =========================
+# Deep Learning & PyTorch
+# =========================
+# Ignore downloaded RAFT weights and local cache
+.cache/
+*.pth
+*.pt
+
+# =========================
+# Media & Temporary Files
+# =========================
+# Ignore drone videos downloaded from Google Drive
+*.mp4
+*.avi
+*.mov
+*.mkv
+/temp/
+/tmp/
+
+# =========================
+# OS Generated Files
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+frontend/.gitignore
+excluded
+technical_assessment.pdf
