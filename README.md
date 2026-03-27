@@ -44,6 +44,7 @@ CV Dashboard UI: http://localhost:3000
 RabbitMQ Management Console: http://localhost:15672 (Credentials: guest / guest)
 
 ## 🛠️ Service Configuration Details
+
 1. Pipeline (./video_processor)
 Mounts the local ./video_processor directory to /app inside the container for rapid development.
 
